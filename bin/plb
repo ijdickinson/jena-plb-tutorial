@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ $# == 0 ]
+then
+    echo "Usage: plb <command> [<options>]"
+    echo "  Commands: init, set, show"
+    exit 1
+fi
+
+command=$1
+shift 1
+
+# Capitalize the first letter of the command, so init becomes Init
+class="${command[@]^}"
+
+# Running the program via Maven means that the classpath is set
+# automatically from the dependencies in pom.xml
+mvn exec:java -q -Dexec.mainClass="com.epimorphics.plb.${class}" -Dexec.args="$*"
