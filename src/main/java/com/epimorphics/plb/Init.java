@@ -38,17 +38,11 @@ import com.hp.hpl.jena.vocabulary.RDF;
  * @author Ian Dickinson, Epimorphics (mailto:ian@epimorphics.com)
  */
 public class Init
-    implements Runnable
+    extends PLB
 {
     /***********************************/
     /* Constants                       */
     /***********************************/
-
-    /** Default location for project log book */
-    public static final String DEFAULT_LOGBOOK_LOCATION = "./plb/tdb";
-
-    /** Default namespace for projects */
-    public static final String DEFAULT_PROJECT_NAMESPACE = "http://www.epimorphics.com/tutorial/plb#";
 
     /***********************************/
     /* Static variables                */
@@ -59,21 +53,13 @@ public class Init
     public static Options options;
     static {
         options = new Options();
+        PLB.addCommonOptions( options );
         options.addOption( "f", "force", false, "Force the persistent model to reset to empty" );
-        options.addOption( "s", "short-description", true, "A short description of the project" );
-        options.addOption( "d", "long-description", true, "A full description of the project" );
-        options.addOption( "n", "--namespace", true, "The HTTP namespace for the project" );
     }
 
     /***********************************/
     /* Instance variables              */
     /***********************************/
-
-    /** Parsed command line */
-    private CommandLine commandLine;
-
-    /** Location of the TDB data store */
-    private String tdbLocation = DEFAULT_LOGBOOK_LOCATION;
 
     /***********************************/
     /* Constructors                    */
@@ -86,7 +72,7 @@ public class Init
     public static void main( String[] args ) {
         try {
             Init init = new Init();
-            init.commandLine = new PosixParser().parse( options, args );
+            init.setCommandLine( new PosixParser().parse( options, args ) );
             init.run();
         }
         catch (ParseException e) {
@@ -96,19 +82,19 @@ public class Init
 
     public void run() {
         try {
-            if (commandLine.getArgList().isEmpty()) {
+            if (getArgList().isEmpty()) {
                 usage();
             }
 
-            if (noTDB() || commandLine.hasOption( "f" )) {
+            if (noTDB() || hasOption( "f" )) {
                 // (re-)create the TDB image
-                FileUtils.deleteQuietly( new File( tdbLocation ) );
-                FileUtils.forceMkdir( new File( tdbLocation ) );
+                FileUtils.deleteQuietly( getTDBFile() );
+                FileUtils.forceMkdir( getTDBFile() );
                 SetupTDB.setOptimizerWarningFlag( false );
-                Dataset dataset = TDBFactory.createDataset( tdbLocation );
+                Dataset dataset = TDBFactory.createDataset( getTdbLocation() );
 
                 // TODO: ideally, we should check that this makes a legal URI
-                String projectName = commandLine.getArgs()[0];
+                String projectName = getArgs()[0];
                 Resource project = dataset.getDefaultModel().createResource( projectNamespace() + projectName );
 
                 project.addProperty( RDF.type, DOAP.Project );
@@ -119,6 +105,9 @@ public class Init
 
                 System.out.println( String.format( "Created new DOAP description for %s with %d triples",
                                                    projectName, dataset.getDefaultModel().size() ) );
+            }
+            else {
+                System.out.println( "Logbook already exists, doing nothing" );
             }
         }
         catch (IOException e) {
@@ -132,14 +121,14 @@ public class Init
 
     /** No TDB is true if either the TDB directory doesn't exist, or it's empty */
     protected boolean noTDB() {
-        File tdbDir = new File( tdbLocation );
-        return !tdbDir.exists() || tdbDir.list().length > 0;
+        File tdbDir = getTDBFile();
+        return !tdbDir.exists() || tdbDir.list().length == 0;
     }
 
     /** Return the namespace for the project itself */
     protected String projectNamespace() {
-        if (commandLine.hasOption( "n" )) {
-            return commandLine.getOptionValue( "n" );
+        if (hasOption( "n" )) {
+            return getOptionValue( "n" );
         }
         else {
             return DEFAULT_PROJECT_NAMESPACE;
@@ -148,8 +137,8 @@ public class Init
 
     /** Add a property if the corresponding option is set */
     protected void addOptionalProperty( Resource project, Property p, String opt ) {
-        if (commandLine.hasOption( opt )) {
-            project.addProperty( p, commandLine.getOptionValue( opt ) );
+        if (hasOption( opt )) {
+            project.addProperty( p, getOptionValue( opt ) );
         }
     }
 
