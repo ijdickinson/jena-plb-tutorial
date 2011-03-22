@@ -24,6 +24,12 @@ import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.epimorphics.plb.vocabs.DOAP;
+import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.tdb.TDBFactory;
+import com.hp.hpl.jena.tdb.sys.SetupTDB;
+import com.hp.hpl.jena.vocabulary.RDF;
+
 /**
  * <p>Shared implementation code for PLB commands</p>
  *
@@ -46,7 +52,6 @@ public abstract class PLB
     /* Static variables                */
     /***********************************/
 
-    @SuppressWarnings( value = "unused" )
     private static final Logger log = LoggerFactory.getLogger( PLB.class );
 
     protected static Options common_options;
@@ -71,6 +76,10 @@ public abstract class PLB
     /* Constructors                    */
     /***********************************/
 
+    public PLB() {
+        SetupTDB.setOptimizerWarningFlag( false );
+    }
+
     /***********************************/
     /* External signature methods      */
     /***********************************/
@@ -84,6 +93,16 @@ public abstract class PLB
 
     public void setCommandLine( CommandLine commandLine ) {
         this.commandLine = commandLine;
+    }
+
+    /** Set the command line from the command's option list and command line args */
+    public void setCommandLine( Options options, String[] args ) {
+        try {
+            setCommandLine( new PosixParser().parse( options, args ) );
+        }
+        catch (ParseException e) {
+            log.error( e.getMessage(), e );
+        }
     }
 
     public CommandLine getCommandLine() {
@@ -117,6 +136,24 @@ public abstract class PLB
     public String getOptionValue( String opt ) {
         return getCommandLine().getOptionValue( opt );
     }
+
+    /** Return the model for the default TDB graph */
+    public Model getTDBModel() {
+        return TDBFactory.createDataset( getTdbLocation() ).getDefaultModel();
+    }
+
+    /** Get the DOAP project resource */
+    public Resource getProjectResource() {
+        ResIterator i = getTDBModel().listSubjectsWithProperty( RDF.type, DOAP.Project );
+        if (i.hasNext()) {
+            return i.next();
+        }
+        else {
+            System.err.println( "No doap:Project resource in this log book: has the project been initialized?" );
+            throw new RuntimeException( "Missing project root resource" );
+        }
+    }
+
 
     /***********************************/
     /* Internal implementation methods */

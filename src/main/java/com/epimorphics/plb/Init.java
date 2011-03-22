@@ -70,14 +70,9 @@ public class Init
     /***********************************/
 
     public static void main( String[] args ) {
-        try {
-            Init init = new Init();
-            init.setCommandLine( new PosixParser().parse( options, args ) );
-            init.run();
-        }
-        catch (ParseException e) {
-            log.error( e.getMessage(), e );
-        }
+        Init init = new Init();
+        init.setCommandLine( options, args );
+        init.run();
     }
 
     public void run() {
