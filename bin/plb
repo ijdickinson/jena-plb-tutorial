@@ -13,6 +13,14 @@ shift 1
 # Capitalize the first letter of the command, so init becomes Init
 class="${command[@]^}"
 
+# Ensure each argument is re-quoted, otherwise mvn barfs
+qargs=""
+while [ "$1" != "" ]
+do
+    qargs="$qargs '$1'"
+    shift
+done
+
 # Running the program via Maven means that the classpath is set
 # automatically from the dependencies in pom.xml
-mvn exec:java -q -Dexec.mainClass="com.epimorphics.plb.${class}" -Dexec.args="$*"
+mvn exec:java -q -Dexec.mainClass="com.epimorphics.plb.${class}" -Dexec.args="$qargs"

@@ -57,9 +57,7 @@ public abstract class PLB
     protected static Options common_options;
     static {
         common_options = new Options();
-        common_options.addOption( "s", "short-description", true, "A short description of the project" );
-        common_options.addOption( "d", "long-description", true, "A full description of the project" );
-        common_options.addOption( "n", "--namespace", true, "The HTTP namespace for the project" );
+        common_options.addOption( "n", "namespace", true, "The HTTP namespace for the project" );
     }
 
     /***********************************/

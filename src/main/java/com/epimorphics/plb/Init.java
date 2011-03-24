@@ -53,8 +53,10 @@ public class Init
     public static Options options;
     static {
         options = new Options();
-        PLB.addCommonOptions( options );
+        options.addOption( "s", "short-description", true, "A short description of the project" );
+        options.addOption( "d", "long-description", true, "A full description of the project" );
         options.addOption( "f", "force", false, "Force the persistent model to reset to empty" );
+        PLB.addCommonOptions( options );
     }
 
     /***********************************/
@@ -93,12 +95,13 @@ public class Init
                 Resource project = dataset.getDefaultModel().createResource( projectNamespace() + projectName );
 
                 project.addProperty( RDF.type, DOAP.Project );
+                project.addProperty( DOAP.name, projectName );
 
                 // add descriptions from command line options
                 addOptionalProperty( project, DOAP.shortdesc, "s" );
                 addOptionalProperty( project, DOAP.description, "d" );
 
-                System.out.println( String.format( "Created new DOAP description for %s with %d triples",
+                System.out.println( String.format( "Created new DOAP description for project %s with %d triples",
                                                    projectName, dataset.getDefaultModel().size() ) );
             }
             else {
