@@ -1,13 +1,31 @@
 #!/bin/bash
 
-if [ $# == 0 ]
-then
+if [ $# == 0 ]; then
     echo "Usage: plb <command> [<options>]"
-    echo "  Commands: init, set, show"
+    echo "  Commands: init, set, show, augment"
     exit 1
 fi
 
-command=$1
+# Find the pom.xml file
+pomdir=`dirname $0`
+pomfile=""
+
+while [ "$pomfile" == "" ] && [ "$pomdir" != "" ]; do
+    pomfile="$pomdir/pom.xml"
+    if [ ! -e $pomfile ]; then
+        pomfile=""
+        pomdir=`dirname $pomdir`
+    fi
+done
+
+if [ "$pomfile" == "" ]; then
+    echo "Could not find pom.xml file, aborting"
+    exit 1
+fi
+
+echo "pom file is $pomfile"
+
+command="$1"
 shift 1
 
 # Capitalize the first letter of the command, so init becomes Init
@@ -15,12 +33,11 @@ class="${command[@]^}"
 
 # Ensure each argument is re-quoted, otherwise mvn barfs
 qargs=""
-while [ "$1" != "" ]
-do
+while [ "$1" != "" ]; do
     qargs="$qargs '$1'"
     shift
 done
 
 # Running the program via Maven means that the classpath is set
 # automatically from the dependencies in pom.xml
-mvn exec:java -q -Dexec.mainClass="com.epimorphics.plb.${class}" -Dexec.args="$qargs"
+mvn exec:java -q -Dexec.mainClass="com.epimorphics.plb.${class}" -Dexec.args="$qargs" -f $pomfile
