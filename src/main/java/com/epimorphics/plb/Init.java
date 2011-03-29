@@ -77,6 +77,7 @@ public class Init
         init.run();
     }
 
+    @Override
     public void run() {
         try {
             if (getArgList().isEmpty()) {

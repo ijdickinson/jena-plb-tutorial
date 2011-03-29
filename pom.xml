@@ -14,6 +14,32 @@
                 <target>1.6</target>
             </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.openjena.tools</groupId>
+          <artifactId>schemagen</artifactId>
+          <version>0.1.0</version>
+          <configuration>
+            <includes>
+              <include>src/main/resources/*.rdf</include>
+            </includes>
+            <fileOptions>
+              <source>
+                <input>default</input>
+                <package-name>com.epimorphics.plb.vocabs</package-name>
+                <ontology>true</ontology>
+                <includeSource>true</includeSource>
+              </source>
+            </fileOptions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>schemagen</id>
+              <goals>
+                <goal>translate</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </build>
   <dependencies>
@@ -69,6 +95,13 @@
       <artifactId>jena</artifactId>
       <version>2.6.5-SNAPSHOT</version>
       <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.openjena.tools</groupId>
+      <artifactId>schemagen</artifactId>
+      <version>0.1.0</version>
+      <type>maven-plugin</type>
       <scope>compile</scope>
     </dependency>
   </dependencies>
