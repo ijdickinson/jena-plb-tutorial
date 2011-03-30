@@ -91,9 +91,10 @@ public class Init
                 SetupTDB.setOptimizerWarningFlag( false );
                 Dataset dataset = TDBFactory.createDataset( getTdbLocation() );
 
-                // TODO: ideally, we should check that this makes a legal URI
+                // the project name is a required argument
                 String projectName = getArgs()[0];
-                Resource project = dataset.getDefaultModel().createResource( projectNamespace() + projectName );
+                String projectURI = projectNamespace() + projectName;
+                Resource project = dataset.getDefaultModel().createResource( projectURI );
 
                 project.addProperty( RDF.type, DOAP.Project );
                 project.addProperty( DOAP.name, projectName );

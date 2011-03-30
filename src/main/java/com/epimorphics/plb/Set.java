@@ -84,13 +84,13 @@ public class Set
         if (checkArguments()) {
             String propName = getArgs()[0];
             String propValue = getArgs()[1];
+            checkKnownDoapProperty( propName );
 
             Model model = getTDBModel();
             Resource project = getProjectResource();
             Property p = model.getProperty( DOAP.getURI() + propName );
             RDFNode obj = propValue.startsWith( "http:" ) ? model.getResource( propValue ) : model.createLiteral( propValue );
 
-            checkKnownProperty( p, propName );
             removeOld( project, p );
             addNewValue( project, p, obj );
         }
@@ -120,17 +120,6 @@ public class Set
         System.exit( 1 );
     }
 
-    /** Return true if the given property is unknown, by which we mean is not defined
-     * in the DOAP schema
-     * @param p A property
-     * @return True if the given property is not defined by DOAP
-     */
-    protected boolean unknownProperty( Property p ) {
-        Model doapModel = DOAP.Project.getModel();
-        Property dp = p.inModel( doapModel );
-        return ! dp.hasProperty( RDF.type, RDF.Property );
-    }
-
     /**
      * Print a list of all of the DOAP properties that can apply to doap:Projects, together with
      * their English labels
@@ -154,13 +143,22 @@ public class Set
         }
     }
 
+    /** Return true if the URI does not correspond to a known resource with the given type
+     * @param uri A resource URI
+     * @param type A resource, denoting the required type for the resource with the given uri
+     * @return True if the given property is not defined by DOAP
+     */
+    protected boolean unknown( Model m, String uri, Resource type ) {
+        return ! m.getResource( uri ).hasProperty( RDF.type, type );
+    }
+
     /**
      * Check that the given property is known in the DOAP schema; throw an exception if not
      * @param p
      * @param propName
      */
-    protected void checkKnownProperty( Property p, String propName ) {
-        if (unknownProperty( p )) {
+    protected void checkKnownDoapProperty( String propName ) {
+        if (unknown( DOAP.Project.getModel(), DOAP.getURI() + propName, RDF.Property )) {
             System.err.println( String.format( "Sorry, property %s was not recognized.\nTry 'plb set help' to see available options", propName ) );
             throw new RuntimeException( "Invalid property " + propName );
         }

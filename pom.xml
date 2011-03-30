@@ -1,9 +1,15 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.jena</groupId>
-  <artifactId>lm-example</artifactId>
+  <groupId>com.epimorphics</groupId>
+  <artifactId>jena-plb-tutorial</artifactId>
+  <name>Jena PLB tutorial</name>
   <version>0.0.1-SNAPSHOT</version>
-    <build>
+  <description>A Jena tutorial example: create a simple project log book using DOAP as a foundation</description>
+  <organization>
+  	<name>Epimorphics Ltd</name>
+  	<url>http://www.epimorphics.com</url>
+  </organization>
+  <build>
       <plugins>
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -28,6 +34,12 @@
                 <package-name>com.epimorphics.plb.vocabs</package-name>
                 <ontology>true</ontology>
                 <includeSource>true</includeSource>
+                <lang-rdfs>true</lang-rdfs>
+                <include>http://sindice.com/vocab/search#</include>
+              </source>
+              <source>
+                <input>sindice-search.rdf</input>
+                <namespace>Sindice</namespace>
               </source>
             </fileOptions>
           </configuration>
