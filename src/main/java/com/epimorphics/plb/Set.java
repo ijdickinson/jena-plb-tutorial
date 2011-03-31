@@ -16,15 +16,17 @@ package com.epimorphics.plb;
 // Imports
 ///////////////
 
+import java.util.Iterator;
+
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.epimorphics.plb.vocabs.DOAP;
+import com.hp.hpl.jena.ontology.OntProperty;
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.vocabulary.RDF;
-import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
  * <p>Set elements of the project description</p>
@@ -126,20 +128,9 @@ public class Set
      */
     protected void listAvailableOptions() {
         System.out.println( "Available options\n-----------------" );
-
-        Model doapModel = DOAP.Project.getModel();
-
-        for (ResIterator i = doapModel.listSubjectsWithProperty( RDF.type, RDF.Property ); i.hasNext(); ) {
-            Resource p = i.next();
-            if (p.hasProperty( RDFS.domain, DOAP.Project )) {
-                // we need to find the English label
-                for (StmtIterator j = p.listProperties( RDFS.comment ); j.hasNext(); ) {
-                    Literal label = j.next().getLiteral();
-                    if (label.getLanguage().equals( "en" )) {
-                        System.out.println( p.getLocalName() + "::  " + label.getLexicalForm() );
-                    }
-                }
-            }
+        for (Iterator<OntProperty> i = DOAP.Project.listDeclaredProperties(); i.hasNext(); ) {
+            OntProperty p = i.next();
+            System.out.println( p.getLocalName() + "::  " + p.getComment( "en" ) );
         }
     }
 
