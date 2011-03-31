@@ -24,7 +24,6 @@ import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.epimorphics.plb.vocabs.DOAP;
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.tdb.TDBFactory;
 import com.hp.hpl.jena.tdb.sys.SetupTDB;
@@ -45,8 +44,11 @@ public abstract class PLB
     /** Default location for project log book */
     public static final String DEFAULT_LOGBOOK_LOCATION = ".plb/tdb";
 
+    /** Namespace for this project */
+    public static final String NS = "http://www.epimorphics.com/tutorial/plb#";
+
     /** Default namespace for projects */
-    public static final String DEFAULT_PROJECT_NAMESPACE = "http://www.epimorphics.com/tutorial/plb#";
+    public static final String DEFAULT_PROJECT_NAMESPACE = NS;
 
     /***********************************/
     /* Static variables                */
@@ -142,16 +144,23 @@ public abstract class PLB
 
     /** Get the DOAP project resource */
     public Resource getProjectResource() {
-        ResIterator i = getTDBModel().listSubjectsWithProperty( RDF.type, DOAP.Project );
+        ResIterator i = getTDBModel().listSubjectsWithProperty( RDF.type, projectRootType() );
         if (i.hasNext()) {
             return i.next();
         }
         else {
-            System.err.println( "No doap:Project resource in this log book: has the project been initialized?" );
+            System.err.println( "No root doap:Project resource in this log book: has the project been initialized?" );
             throw new RuntimeException( "Missing project root resource" );
         }
     }
 
+    /**
+     * RDF class type denoting project root resources
+     * @return
+     */
+    public Resource projectRootType() {
+        return ResourceFactory.createResource( NS + "root" );
+    }
 
     /***********************************/
     /* Internal implementation methods */

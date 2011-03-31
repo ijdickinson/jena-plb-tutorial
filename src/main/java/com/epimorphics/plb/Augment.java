@@ -37,7 +37,6 @@ import com.epimorphics.plb.vocabs.DOAP;
 import com.epimorphics.plb.vocabs.Sindice;
 import com.hp.hpl.jena.query.*;
 import com.hp.hpl.jena.rdf.model.*;
-import com.hp.hpl.jena.sparql.function.library.sha1sum;
 import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import com.hp.hpl.jena.util.ResourceUtils;
 import com.hp.hpl.jena.vocabulary.OWL;
@@ -267,7 +266,7 @@ public class Augment
         try {
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update( str.getBytes() );
-            return new BigInteger( 1,md.digest() ).toString(16);
+            return String.format( "%040x", new BigInteger( 1, md.digest() ) );
         }
         catch (NoSuchAlgorithmException e) {
             log.error( e.getMessage(), e );

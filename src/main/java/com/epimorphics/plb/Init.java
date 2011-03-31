@@ -96,8 +96,9 @@ public class Init
                 String projectURI = projectNamespace() + projectName;
                 Resource project = dataset.getDefaultModel().createResource( projectURI );
 
-                project.addProperty( RDF.type, DOAP.Project );
-                project.addProperty( DOAP.name, projectName );
+                project.addProperty( RDF.type, DOAP.Project )
+                       .addProperty( RDF.type, projectRootType() )
+                       .addProperty( DOAP.name, projectName );
 
                 // add descriptions from command line options
                 addOptionalProperty( project, DOAP.shortdesc, "s" );
