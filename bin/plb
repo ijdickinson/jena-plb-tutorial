@@ -23,8 +23,6 @@ if [ "$pomfile" == "" ]; then
     exit 1
 fi
 
-echo "pom file is $pomfile"
-
 command="$1"
 shift 1
 
