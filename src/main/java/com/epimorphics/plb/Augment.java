@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -39,7 +37,9 @@ import com.epimorphics.plb.vocabs.DOAP;
 import com.epimorphics.plb.vocabs.Sindice;
 import com.hp.hpl.jena.query.*;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.sparql.function.library.sha1sum;
 import com.hp.hpl.jena.sparql.vocabulary.FOAF;
+import com.hp.hpl.jena.util.ResourceUtils;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -108,7 +108,7 @@ public class Augment
     public void run() {
         if (checkArguments()) {
             Model devs = collectDevelopers();
-            augmentDevelopers( getProjectResource(), DOAP.developer, devs );
+            augmentProject( getProjectResource(), DOAP.developer, devs );
             getTDBModel().add( devs );
         }
     }
@@ -177,7 +177,12 @@ public class Augment
                 if (!m.contains( null, FOAF.name, authorName )) {
                     Resource author = m.createResource( FOAF.Person );
                     if (authorName != null) {author.addProperty( FOAF.name, authorName );}
-                    if (authorEmail != null) {author.addProperty( FOAF.mbox, authorEmail );}
+                    if (authorEmail != null) {
+                        String email = "mailto:" + authorEmail;
+                        author.addProperty( FOAF.mbox, email )
+                              .addProperty( FOAF.mbox_sha1sum, getMboxSha1Sum( email ));
+
+                    }
                     System.out.println( String.format( "Collecting dev name = <%s>, email = <%s>", authorName, authorEmail ) );
                 }
             }
@@ -215,8 +220,16 @@ public class Augment
     }
 
 
-    protected void augmentDevelopers( Resource project, Property rel, Model devs ) {
-
+    /**
+     * Augment the project description resource by attaching the given developers using
+     * the given relation, and then querying the web to discover more information about
+     * the developers to add to the model.
+     *
+     * @param project Resource denoting the project
+     * @param rel Property relating the project to the developers
+     * @param devs Model containing foaf:Person resources denoting the discovered developers
+     */
+    protected void augmentProject( Resource project, Property rel, Model devs ) {
         for (ResIterator i = devs.listSubjectsWithProperty( RDF.type, FOAF.Person ); i.hasNext(); ) {
             Resource dev = i.next();
 
@@ -226,10 +239,10 @@ public class Augment
             // see if we can find any foaf information about this person
             if (dev.hasProperty( FOAF.mbox )) {
                 Model augmented = ModelFactory.createDefaultModel();
-                String mboxSha1 = getMboxSha1Sum( dev );
+                String mboxSha1 = getMboxSha1Sum( dev.getProperty( FOAF.mbox ).getString() );
                 collectFoafData( augmented, dev, mboxSha1 );
 
-                enrichFoafDescription( project, dev, augmented, mboxSha1 );
+                enrichFoafDescription( dev, augmented, mboxSha1 );
             }
         }
     }
@@ -246,15 +259,14 @@ public class Augment
     }
 
     /**
-     * @param dev
-     * @return
-     * @throws NoSuchAlgorithmException
+     * Return the SHA1 sum of a given string
+     * @param str The string to be hashed
+     * @return The SHA1 sum as a hex encoded string
      */
-    protected String getMboxSha1Sum( Resource dev ) {
+    protected String getMboxSha1Sum( String str) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA1");
-            String mbox = "mailto:" + dev.getProperty( FOAF.mbox ).getString();
-            md.update( mbox.getBytes() );
+            md.update( str.getBytes() );
             return new BigInteger( 1,md.digest() ).toString(16);
         }
         catch (NoSuchAlgorithmException e) {
@@ -284,9 +296,8 @@ public class Augment
 
         // read phase: add those documents into a combined model
         Model m = ModelFactory.createDefaultModel();
-        String docURL = "";
         for (ResIterator i = sIndex.listSubjectsWithProperty( RDF.type, Sindice.Result ); i.hasNext(); ) {
-            docURL = i.next().getPropertyResourceValue( Sindice.link ).getURI();
+            String docURL = i.next().getPropertyResourceValue( Sindice.link ).getURI();
 
             // we could be more sophisticated here about provenance tracking
             try {
@@ -296,8 +307,6 @@ public class Augment
                 // warn about the read failure, but carry on and read the other docs
                 log.warn( String.format( "Failed to retrieve from %s because: %s", docURL, e.getMessage() ) );
             }
-
-            System.out.println( "Model size now = " + m.size() );
         }
 
         return m;
@@ -305,15 +314,15 @@ public class Augment
 
     /**
      * Enrich the project description by adding
-     * @param project
-     * @param dev
-     * @param augmented
+     *
+     * @param dev The developer whose profile we're enriching
+     * @param collected The model containing collected public info via sindice.com
      */
-    protected void enrichFoafDescription( Resource project, Resource dev, Model augmented, String mboxSha1 ) {
+    protected void enrichFoafDescription( Resource dev, Model collected, String mboxSha1 ) {
         // copy the close-bounded description from augmented into the main model
         String queryString = String.format( "describe ?s where {?s <%s> \"%s\"}", FOAF.mbox_sha1sum.getURI(), mboxSha1 );
         Query query = QueryFactory.create( queryString ) ;
-        QueryExecution qexec = QueryExecutionFactory.create( query, augmented );
+        QueryExecution qexec = QueryExecutionFactory.create( query, collected );
         dev.getModel().add( qexec.execDescribe() );
 
         // merge the new person resources
@@ -360,26 +369,7 @@ public class Augment
      * @param target
      */
     protected void mergeInto( Resource source, Resource target ) {
-        List<Statement> stmts = new ArrayList<Statement>();
-        for (StmtIterator i = source.listProperties(); i.hasNext(); ) {
-            stmts.add( i.next() );
-        }
-
-        for (Statement s: stmts) {
-            source.getModel().remove( s );
-            target.addProperty( s.getPredicate(), s.getObject() );
-        }
-
-        stmts.clear();
-
-        for (StmtIterator i = source.getModel().listStatements( null, null, source ); i.hasNext(); ) {
-            stmts.add( i.next() );
-        }
-
-        for (Statement s: stmts) {
-            source.getModel().remove( s );
-            target.getModel().add( s.getSubject(), s.getPredicate(), target );
-        }
+        ResourceUtils.renameResource( source, target.getURI() );
     }
 
 
